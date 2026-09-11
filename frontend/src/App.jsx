@@ -7,7 +7,7 @@ function App() {
 
   useEffect(() => {
     axios
-      .get('http://localhost:5000/')
+      .get('http://localhost:5000/api/health')
       .then((response) => {
         setBackendMessage(response.data.message)
       })
