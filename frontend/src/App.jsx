@@ -1,6 +1,21 @@
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 import './App.css'
 
 function App() {
+  const [backendMessage, setBackendMessage] = useState('Checking backend...')
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:5000/')
+      .then((response) => {
+        setBackendMessage(response.data.message)
+      })
+      .catch(() => {
+        setBackendMessage('Backend unavailable')
+      })
+  }, [])
+
   return (
     <div className="app">
       <header className="header">
@@ -11,8 +26,8 @@ function App() {
       <main className="dashboard">
         <div className="card">
           <h2>System Status</h2>
-          <p className="status">● Backend Connected</p>
-          <p>Healthcare integration API is running.</p>
+          <p className="status">● {backendMessage}</p>
+          <p>React is communicating with the Express backend.</p>
         </div>
 
         <div className="card">
