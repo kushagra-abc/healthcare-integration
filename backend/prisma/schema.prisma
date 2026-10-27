@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                Int      @id @default(autoincrement())
+  name              String
+  dateOfBirth       DateTime
+  email             String?
+  phone             String?
+  insuranceMemberId String
+  insuranceProvider String
+  createdAt         DateTime @default(now())
+
+  claims            Claim[]
+  eligibilityChecks EligibilityCheck[]
+}
+
+model EligibilityCheck {
+  id                 Int                  @id @default(autoincrement())
+  patientId          Int
+  status             EligibilityStatus    @default(PENDING)
+  provider           String               @default("MOCK")
+  selectedProvider   String?
+  normalizedResponse Json?
+  retryCount         Int                  @default(0)
+  errorMessage       String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  patient            Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  attempts           EligibilityAttempt[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model Provider {
+  id             Int      @id @default(autoincrement())
+  name           String
+  organization   String?
+  specialization String?
+  createdAt      DateTime @default(now())
+
+  claims Claim[]
+}
+
+model Claim {
+  id                    Int         @id @default(autoincrement())
+  patientId             Int
+  providerId            Int
+  serviceDate           DateTime
+  description           String
+  billedAmount          Decimal     @db.Decimal(10, 2)
+  approvedAmount        Decimal?    @db.Decimal(10, 2)
+  patientResponsibility Decimal?    @db.Decimal(10, 2)
+  status                ClaimStatus @default(DRAFT)
+  insurerClaimId        String?
+  rejectionReason       String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  patient       Patient              @relation(fields: [patientId], references: [id])
+  provider      Provider             @relation(fields: [providerId], references: [id])
+  statusHistory ClaimStatusHistory[]
+  payments      Payment[]
+}
+
+model ClaimStatusHistory {
+  id        Int          @id @default(autoincrement())
+  claimId   Int
+  oldStatus ClaimStatus?
+  newStatus ClaimStatus
+  remarks   String?
+  createdAt DateTime     @default(now())
+
+  claim Claim @relation(fields: [claimId], references: [id])
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  claimId          Int
+  amount           Decimal       @db.Decimal(10, 2)
+  paymentDate      DateTime
+  paymentReference String?
+  status           PaymentStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+
+  claim Claim @relation(fields: [claimId], references: [id])
+}
+
+enum ClaimStatus {
+  DRAFT
+  SUBMITTED
+  PROCESSING
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  PAID
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum EligibilityStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Payer {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  payerId       String?        @unique
+  active        Boolean        @default(true)
+  providerLinks PayerSupport[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Clearinghouse {
+  id         Int            @id @default(autoincrement())
+  name       String         @unique
+  active     Boolean        @default(true)
+  payerLinks PayerSupport[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model PayerSupport {
+  id                   Int           @id @default(autoincrement())
+  payerId              Int
+  clearinghouseId      Int
+  eligibilitySupported Boolean       @default(false)
+  claimsSupported      Boolean       @default(false)
+  estimatedCost        Float         @default(0)
+  available            Boolean       @default(true)
+  priority             Int           @default(100)
+  payer                Payer         @relation(fields: [payerId], references: [id], onDelete: Cascade)
+  clearinghouse        Clearinghouse @relation(fields: [clearinghouseId], references: [id], onDelete: Cascade)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@unique([payerId, clearinghouseId])
+  @@index([payerId])
+  @@index([clearinghouseId])
+}
+
+model EligibilityAttempt {
+  id                 Int      @id @default(autoincrement())
+  eligibilityCheckId Int
+  provider           String
+  attemptNumber      Int
+  status             String   @default("PROCESSING")
+  errorMessage       String?
+  retryable          Boolean  @default(false)
+  durationMs         Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  eligibilityCheck EligibilityCheck @relation(fields: [eligibilityCheckId], references: [id], onDelete: Cascade)
+
+  @@unique([eligibilityCheckId, attemptNumber])
+  @@index([eligibilityCheckId])
+  @@index([provider, status])
+}
