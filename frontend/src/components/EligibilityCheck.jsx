@@ -214,11 +214,9 @@ export default function EligibilityCheck() {
                     {benefits && (
                         <>
                             <h4>Benefits</h4>
-                            <p>Copay: ${benefits.copay}</p>
-                            <p>Total deductible: ${benefits.deductibleTotal}</p>
-                            <p>
-                                Remaining deductible: ${benefits.deductibleRemaining}
-                            </p>
+                            <p>Copay: ₹{benefits.copay}</p>
+                            <p>Total deductible: ₹{benefits.deductibleTotal}</p>
+                            <p>Remaining deductible: ₹{benefits.deductibleRemaining}</p>
                             <p>Coinsurance: {benefits.coinsurancePercent}%</p>
                         </>
                     )}
