@@ -23,7 +23,7 @@ async function checkEligibility(patient, options = {}) {
         response = await axios.post(
             `${baseUrl}/api/eligibility`,
             { patient, options },
-            { timeout: 10000 }
+            { timeout: 120000 }
         );
     } catch (error) {
         const responseData = error.response?.data;
