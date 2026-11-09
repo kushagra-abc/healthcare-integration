@@ -21,7 +21,7 @@ async function submitClaim(claim, options = {}) {
         const response = await axios.post(
             `${baseUrl}/api/claims`,
             { claim, options },
-            { timeout: 10000 }
+            { timeout: 120000 }
         );
 
         return response.data;
